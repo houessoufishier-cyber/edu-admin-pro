@@ -1,0 +1,484 @@
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { 
+  Users, 
+  CreditCard, 
+  Calendar, 
+  UserSquare2, 
+  BarChart3, 
+  Search, 
+  Plus, 
+  LogOut, 
+  Bell, 
+  CheckCircle2, 
+  AlertCircle,
+  GraduationCap,
+  Truck,
+  BookOpen,
+  PieChart,
+  Settings,
+  X,
+  Menu,
+  ChevronRight,
+  TrendingUp,
+  Download,
+  Trash2,
+  Edit3,
+  Clock,
+  Briefcase,
+  DollarSign,
+  Phone,
+  Building2,
+  Mail,
+  MapPin,
+  Sparkles,
+  UserCheck,
+  Check,
+  History,
+  FileText,
+  Printer,
+  Smartphone,
+  ArrowRight,
+  LayoutGrid
+} from 'lucide-react';
+import Markdown from 'react-markdown';
+
+// --- STEP 1: SUPABASE CONFIGURATION ---
+const SUPABASE_URL = 'https://seavotfcckkafjofzdla.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_qmLduzbdbj0TjmV5SZJJ-w_YotjBS9a';
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- STYLES CONSTANTS ---
+const S = {
+  container: { minHeight: '100vh', background: '#F8FAFC', color: '#1E293B', fontFamily: 'Trebuchet MS, sans-serif' },
+  header: { background: '#fff', padding: '12px 24px', borderBottom: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky' as any, top: 0, zIndex: 110 },
+  sidebar: { background: '#fff', borderRight: '1px solid #E2E8F0', height: 'calc(100vh - 65px)', position: 'fixed' as any, left: 0, top: 65, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', zIndex: 100, display: 'flex', flexDirection: 'column' as any },
+  main: { transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', padding: '24px 32px', minHeight: 'calc(100vh - 65px)' },
+  card: { background: '#fff', borderRadius: 16, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #E2E8F0' },
+  input: { width: '100%', padding: '12px 14px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: 14, outline: 'none', background: '#F9FBFF' },
+  button: { padding: '12px 24px', borderRadius: 10, fontWeight: '700', fontSize: 14, cursor: 'pointer', border: 'none', transition: 'all 0.2s' },
+  primaryBtn: { background: '#16A34A', color: '#fff' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 },
+  navItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, cursor: 'pointer', transition: '0.2s', marginBottom: 4, fontWeight: '600', fontSize: 14 },
+  badge: { fontSize: 10, fontWeight: '800', padding: '2px 8px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: 0.5 }
+};
+
+// --- SCHOOL SYSTEM CONSTANTS ---
+const PRIMARY_CLASSES = ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5", "Class 6"];
+const SECONDARY_LEVELS = ["Form One", "Form Two", "Form Three", "Form Four", "Form Five", "Lower Sixth", "Upper Sixth"];
+const TECH_TRADES = ["Moto Mechanic", "Electricity", "Electronics", "Woodwork", "Building & Construction", "Bespoke"];
+const COMM_TRADES = ["Marketing", "Accounting"];
+
+const SCHOOL_STRUCTURE = {
+  primary: PRIMARY_CLASSES,
+  general: SECONDARY_LEVELS.map(l => `${l} General`),
+  technical: SECONDARY_LEVELS.flatMap(l => TECH_TRADES.map(t => `${l} (Technical - ${t})`)),
+  commercial: SECONDARY_LEVELS.flatMap(l => COMM_TRADES.map(t => `${l} (Commercial - ${t})`))
+};
+
+const ALL_CAMEROON_CLASSES = [
+  ...SCHOOL_STRUCTURE.primary,
+  ...SCHOOL_STRUCTURE.general,
+  ...SCHOOL_STRUCTURE.technical,
+  ...SCHOOL_STRUCTURE.commercial,
+];
+
+const BILINGUAL_SEQUENCES = [
+  "Séquence 1 / Sequence 1",
+  "Séquence 2 / Sequence 2",
+  "Séquence 3 / Sequence 3",
+  "Séquence 4 / Sequence 4",
+  "Séquence 5 / Sequence 5",
+  "Séquence 6 / Sequence 6"
+];
+
+const SUBJECTS_CAMEROON = {
+  primary: [
+    "English Language", "French Language", "Mathematics", "Science & Technology", 
+    "Social Studies", "ICT", "Arts & Craft", "Physical Education", "National Culture"
+  ],
+  general: [
+    "English Language", "French Language", "Mathematics", "Biology", "Chemistry", 
+    "Physics", "History", "Geography", "Philosophy", "Citizenship", "Religious Studies", "Additional Mathematics"
+  ],
+  technical: [
+    "Mechanical Engineering", "Electrical Engineering", "Civil Engineering", 
+    "Woodwork", "Electronics", "Applied Mechanics", "Technical Drawing"
+  ],
+  commercial: [
+    "Accounting", "Business Management", "Commerce", "Economics", "Financial Management", 
+    "Marketing", "Business Mathematics"
+  ]
+};
+
+const ALL_SUBJECTS = Array.from(new Set([
+  ...SUBJECTS_CAMEROON.primary,
+  ...SUBJECTS_CAMEROON.general,
+  ...SUBJECTS_CAMEROON.technical,
+  ...SUBJECTS_CAMEROON.commercial
+])).sort();
+
+export default function App() {
+  // --- STATE VARIABLES ---
+  const [user, setUser] = useState(null);
+  const [schoolId, setSchoolId] = useState(null);
+  const [schoolData, setSchoolData] = useState(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [authTab, setAuthTab] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [schoolName, setSchoolName] = useState('');
+  const [directorName, setDirectorName] = useState('');
+  const [city, setCity] = useState('Yaoundé');
+  const [schoolSystem, setSchoolSystem] = useState('Purely English');
+  const [phone, setPhone] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [students, setStudents] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [transportRoutes, setTransportRoutes] = useState([]);
+  const [slots, setSlots] = useState([]);
+  const [grades, setGrades] = useState([]);
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const [smsLogs, setSmsLogs] = useState([]);
+  const [smsConfig, setSmsConfig] = useState({ fee_deadline: '', reminder_days_before: 3, automated_enabled: false, template_reminder: 'Cher parent, un versement pour {student} est attendu pour le {deadline}. Merci.', template_overdue: 'Urgent: Le versement pour {student} est en retard. Veuillez régulariser au plus vite.' });
+  const [smsLoading, setSmsLoading] = useState(false);
+  const [dormitories, setDormitories] = useState([]);
+  const [newDorm, setNewDorm] = useState({ name: '', gender: 'Boys', capacity: 0, blocks: [] });
+  const [isDormModalOpen, setIsDormModalOpen] = useState(false);
+  const [selectedDorm, setSelectedDorm] = useState(null);
+  const [isOccupantsModalOpen, setIsOccupantsModalOpen] = useState(false);
+  const [aiReport, setAiReport] = useState('');
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [showBroadcast, setShowBroadcast] = useState(false);
+
+  const reportRef = useRef<HTMLDivElement>(null);
+  const bulletinRef = useRef<HTMLDivElement>(null);
+
+  const [tab, setTab] = useState('dashboard');
+  const [lang, setLang] = useState('FR');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [isBookModalOpen, setIsBookModalOpen] = useState(false);
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
+  const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isBulletinModalOpen, setIsBulletinModalOpen] = useState(false);
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [selectedStudentForCard, setSelectedStudentForCard] = useState(null);
+
+  const [timetableSettings, setTimetableSettings] = useState({
+    times: ['07:30', '08:30', '09:30', '10:30', '11:00', '12:00', '13:00', '14:00', '15:00'],
+    days: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam']
+  });
+
+  const [selectedSequence, setSelectedSequence] = useState(BILINGUAL_SEQUENCES[0]);
+  const [selectedStudentForGrades, setSelectedStudentForGrades] = useState(null);
+  const [marks, setMarks] = useState(ALL_SUBJECTS.map(s => ({ name: s, coeff: 1, mark: '' })));
+  const [paymentData, setPaymentData] = useState({ studentId: '', amount: '', method: 'Cash' });
+  const [newBook, setNewBook] = useState({ title: '', author: '', subject: '', quantity: 1 });
+  const [newRoute, setNewRoute] = useState({ name: '', driver: '', driverPhone: '', busName: '', busPlate: '', studentsCount: 0, monthlyFee: 0, departureTime: '06:30' });
+  const [newSlot, setNewSlot] = useState({ day: 'Lun', time: '07:30', subject: '', teacher: '', room: '', class: '4ème A' });
+  const [planPaymentStep, setPlanPaymentStep] = useState(1);
+  const [planPhone, setPlanPhone] = useState('');
+
+  const [newStudent, setNewStudent] = useState({ name: '', class: ALL_CAMEROON_CLASSES[0], parentName: '', parentPhone: '', feesTotal: 85000 });
+  const [newStaff, setNewStaff] = useState({ name: '', subject: '', phone: '', salary: '', role: 'Teacher' });
+
+  // --- TRANSLATIONS ---
+  const t = {
+    dashboard: lang === 'FR' ? 'Tableau de Bord' : 'Dashboard',
+    students: lang === 'FR' ? 'Élèves' : 'Students',
+    grades: lang === 'FR' ? 'Notes & Bulletins' : 'Grades & Reports',
+    finances: lang === 'FR' ? 'Finances' : 'Finances',
+    planning: lang === 'FR' ? 'Planning' : 'Timetable',
+    staff: lang === 'FR' ? 'Personnel' : 'Staff',
+    library: lang === 'FR' ? 'Bibliothèque' : 'Library',
+    transport: lang === 'FR' ? 'Transport' : 'Transport',
+    plans: lang === 'FR' ? 'Plans' : 'Plans',
+    sms: lang === 'FR' ? 'Notifications SMS' : 'SMS Notifications',
+    teacherEntry: lang === 'FR' ? 'Saisie des Notes' : 'Mark Entry',
+    dormitory: lang === 'FR' ? 'Dortoirs' : 'Dormitories',
+    settings: lang === 'FR' ? 'Paramètres' : 'Settings',
+    recordPayment: lang === 'FR' ? 'ENREGISTRER PAIEMENT' : 'RECORD PAYMENT',
+    amount: lang === 'FR' ? 'MONTANT (FCFA)' : 'AMOUNT (FCFA)',
+    cash: lang === 'FR' ? 'Espèces' : 'Cash',
+    virement: lang === 'FR' ? 'Virement' : 'Transfer',
+    processing: lang === 'FR' ? 'TRAITEMENT EN COURS...' : 'PROCESSING...',
+    schoolNameLabel: lang === 'FR' ? "NOM DE L'ÉCOLE" : 'SCHOOL NAME',
+    directorLabel: lang === 'FR' ? 'DIRECTEUR' : 'DIRECTOR',
+    cityLabel: lang === 'FR' ? 'VILLE' : 'CITY',
+    systemLabel: lang === 'FR' ? 'SYSTÈME' : 'SYSTEM',
+    schoolPlaceholder: lang === 'FR' ? "Nom de l'école" : 'School Name',
+    directorPlaceholder: lang === 'FR' ? 'Nom du directeur' : 'Director Name',
+    phonePlaceholder: lang === 'FR' ? 'Téléphone' : 'Phone',
+    whatsappPlaceholder: lang === 'FR' ? 'Ex: 237690000000' : 'Ex: 237690000000',
+    feeCollection: lang === 'FR' ? 'Collecte des Frais' : 'Fee Collection',
+    collected: lang === 'FR' ? 'COLLECTÉS' : 'COLLECTED',
+    goal: lang === 'FR' ? 'OBJECTIF' : 'GOAL',
+    paymentAlerts: lang === 'FR' ? 'ALERTES PAIEMENTS' : 'PAYMENT ALERTS',
+    statsStudents: lang === 'FR' ? 'Élèves Inscrits' : 'Enrolled Students',
+    statsAttendance: lang === 'FR' ? 'Assiduité' : 'Attendance',
+    statsFinances: lang === 'FR' ? 'Frais Encaissés' : 'Fees Collected',
+    statsDebtors: lang === 'FR' ? 'Insolvables' : 'Debtors',
+    dormitoryTitle: lang === 'FR' ? 'Dortoirs' : 'Dormitories',
+    aiAssistant: lang === 'FR' ? 'ASSISTANT IA' : 'AI ASSISTANT',
+    aiNeedReport: lang === 'FR' ? "Besoin d'un rapport ? Cliquez pour générer via l'IA." : 'Need a report? Click to generate via AI.',
+    generateReport: lang === 'FR' ? 'GÉNÉRER RAPPORT' : 'GENERATE REPORT',
+    greeting: lang === 'FR' ? `Bonjour, ${directorName}! 👋` : `Hello, ${directorName}! 👋`,
+    dashboardSubtitle: lang === 'FR' ? "Voici l'état actuel de votre établissement." : "Here is the current state of your school.",
+    noPaymentMessage: (count: number) => lang === 'FR' ? `${count} élèves sans versement.` : `${count} students without payment.`,
+    sendSMS: lang === 'FR' ? 'ENVOYER SMS' : 'SEND SMS',
+    newStudent: lang === 'FR' ? '+ NOUVEL ÉLÈVE' : '+ NEW STUDENT',
+    fullName: lang === 'FR' ? 'NOM COMPLET' : 'FULL NAME',
+    class: lang === 'FR' ? 'CLASSE' : 'CLASS',
+    fees: lang === 'FR' ? 'SCOLARITÉ (FCFA)' : 'FEES (FCFA)',
+    status: lang === 'FR' ? 'STATUT' : 'STATUS',
+    actions: lang === 'FR' ? 'ACTIONS' : 'ACTIONS',
+    paid: lang === 'FR' ? 'SOLDÉ' : 'PAID',
+    unpaid: lang === 'FR' ? 'IMPAYÉ' : 'UNPAID',
+    selectStudent: lang === 'FR' ? 'Sélectionner un élève' : 'Select a student',
+    payMoMo: lang === 'FR' ? 'PAIEMENT MOBILE MONEY' : 'MOBILE MONEY PAYMENT',
+    successPayment: lang === 'FR' ? 'Paiement Réussi' : 'Payment Successful',
+    addDorm: lang === 'FR' ? '+ NOUVEAU DORTOIR' : '+ NEW DORMITORY',
+    dormName: lang === 'FR' ? 'NOM DU DORTOIR' : 'DORMITORY NAME',
+    boys: lang === 'FR' ? 'Garçons' : 'Boys',
+    girls: lang === 'FR' ? 'Filles' : 'Girls',
+    whatsappReminder: lang === 'FR' ? 'Rappel WhatsApp' : 'WhatsApp Reminder',
+  };
+
+  // --- HELPERS ---
+  const formatWhatsAppNumber = (number: string) => {
+    if (!number) return '';
+    let cleaned = number.replace(/\D/g, '');
+    if (cleaned.startsWith('6') && cleaned.length === 9) cleaned = '237' + cleaned;
+    if (cleaned.startsWith('+')) cleaned = cleaned.substring(1);
+    return cleaned;
+  };
+
+  // --- ACTIONS ---
+  const sendWhatsApp = (phone: string, msg: string) => {
+    if (!phone) return alert(lang === 'FR' ? 'Numéro manquant' : 'Missing number');
+    const cleanPhone = formatWhatsAppNumber(phone);
+    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(url, '_blank');
+  };
+
+  const contactParent = (student: any) => {
+    const parentPhone = formatWhatsAppNumber(student.parent_phone);
+    if (!parentPhone) return alert(lang === 'FR' ? 'Numéro du parent absent' : 'Parent number missing');
+    const message = `Bonjour, je suis ${schoolData?.director_name} de ${schoolData?.name}. Concernant ${student.name}.`;
+    sendWhatsApp(parentPhone, message);
+  };
+
+  const sendPaymentReminder = (student: any) => {
+    const parentPhone = formatWhatsAppNumber(student.parent_phone);
+    if (!parentPhone) return alert(lang === 'FR' ? 'Numéro du parent absent' : 'Parent number missing');
+    const owed = (student.fees_total || 0) - (student.fees_paid || 0);
+    const message = `Bonjour Parent de ${student.name},\nSolde impayé à ${schoolData?.name}: ${owed.toLocaleString()} FCFA.\nMerci.`;
+    sendWhatsApp(parentPhone, message);
+  };
+
+  const sendBroadcast = () => {
+    const parents = students.filter(s => s.parent_phone);
+    if (parents.length === 0) return alert('Aucun numéro enregistré');
+    parents.forEach((s, idx) => {
+      setTimeout(() => {
+        const phone = formatWhatsAppNumber(s.parent_phone);
+        sendWhatsApp(phone, `${broadcastMessage}\n\n— ${schoolData?.name}`);
+      }, idx * 1500);
+    });
+    setShowBroadcast(false);
+    setBroadcastMessage('');
+  };
+
+  const updateSettings = async () => {
+    try {
+      const { data, error } = await supabase.from('schools').update({
+        name: schoolData.name,
+        director_name: schoolData.director_name,
+        city: schoolData.city,
+        system: schoolData.system,
+        whatsapp_number: schoolData.whatsapp_number
+      }).eq('id', schoolId).select().single();
+      if (error) throw error;
+      setSchoolData(data);
+      alert('Paramètres mis à jour !');
+    } catch (e) { alert('Erreur de sauvegarde'); }
+  };
+
+  // --- SUPABASE DATA RETRIEVAL ---
+  useEffect(() => {
+    const loadAll = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(session.user);
+        const { data: school } = await supabase.from('schools').select('*').eq('owner_id', session.user.id).single();
+        if (school) {
+          setSchoolId(school.id);
+          setSchoolData(school);
+          const [st, pm] = await Promise.all([
+            supabase.from('students').select('*').eq('school_id', school.id),
+            supabase.from('fee_payments').select('*').eq('school_id', school.id)
+          ]);
+          if (st.data) setStudents(st.data);
+          if (pm.data) setPayments(pm.data);
+        }
+      }
+      setCheckingSession(false);
+    };
+    loadAll();
+  }, []);
+
+  const NavItem = ({ id, icon: Icon, label }: any) => (
+    <div 
+      onClick={() => setTab(id)} 
+      style={{ ...S.navItem, background: tab === id ? '#F0FDF4' : 'transparent', color: tab === id ? '#16A34A' : '#64748B' }}
+    >
+      <Icon size={18} />
+      {isSidebarOpen && <span>{label}</span>}
+    </div>
+  );
+
+  const StatCard = ({ label, val, icon: Icon, color, suffix = '' }: any) => (
+    <div style={S.card}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: '700', color: '#64748B', marginBottom: 8 }}>{label}</div>
+          <div style={{ fontSize: 24, fontWeight: '800', color: '#0F172A' }}>{val}{suffix}</div>
+        </div>
+        <div style={{ padding: 10, background: `${color}15`, color, borderRadius: 12 }}>
+          <Icon size={20} />
+        </div>
+      </div>
+    </div>
+  );
+
+  if (checkingSession) return <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t.processing}</div>;
+  if (!user) return (
+    <div style={{ ...S.container, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ ...S.card, width: '100%', maxWidth: 400 }}>
+        <h2 style={{ textAlign: 'center', fontWeight: '900', fontSize: 24 }}>🎓 EduAdmin Pro</h2>
+        <div style={{ display: 'flex', background: '#F1F5F9', borderRadius: 10, padding: 4, margin: '20px 0' }}>
+          <button onClick={() => setAuthTab('login')} style={{ flex: 1, padding: 10, border: 'none', background: authTab === 'login' ? '#fff' : 'transparent', borderRadius: 8, fontWeight: '700', cursor: 'pointer' }}>LOGIN</button>
+          <button onClick={() => setAuthTab('signup')} style={{ flex: 1, padding: 10, border: 'none', background: authTab === 'signup' ? '#fff' : 'transparent', borderRadius: 8, fontWeight: '700', cursor: 'pointer' }}>SIGNUP</button>
+        </div>
+        
+        {authTab === 'login' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <input style={S.input} placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} />
+            <input style={S.input} type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+            <button onClick={() => {}} style={{ ...S.button, ...S.primaryBtn }}>LOGIN</button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+             <input style={S.input} placeholder="School Name" onChange={e => setSchoolName(e.target.value)} />
+             <input style={S.input} placeholder="Director Name" onChange={e => setDirectorName(e.target.value)} />
+             <input style={S.input} placeholder="Email" onChange={e => setEmail(e.target.value)} />
+             <input style={S.input} type="password" placeholder="Password" onChange={e => setPassword(e.target.value)} />
+             <button onClick={() => {}} style={{ ...S.button, ...S.primaryBtn }}>CREATE ACCOUNT</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={S.container}>
+      <header style={S.header}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><Menu /></button>
+          <h1 style={{ fontWeight: '900', fontSize: 18 }}>EduAdmin Pro</h1>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button onClick={() => setLang(lang === 'FR' ? 'EN' : 'FR')} style={{ ...S.button, background: '#F1F5F9', padding: '6px 12px' }}>{lang}</button>
+          <button onClick={() => supabase.auth.signOut()} style={{ ...S.button, background: '#FEF2F2', color: '#EF4444' }}><LogOut size={16} /></button>
+        </div>
+      </header>
+
+      <aside style={{ ...S.sidebar, width: isSidebarOpen ? 260 : 80 }}>
+        <NavItem id="dashboard" icon={LayoutGrid} label={t.dashboard} />
+        <NavItem id="students" icon={Users} label={t.students} />
+        <NavItem id="finances" icon={CreditCard} label={t.finances} />
+        <NavItem id="settings" icon={Settings} label={t.settings} />
+      </aside>
+
+      <main style={{ ...S.main, marginLeft: isSidebarOpen ? 260 : 80 }}>
+        {tab === 'dashboard' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            <h2 style={{ fontSize: 24, fontWeight: '800' }}>{t.greeting}</h2>
+            <div style={S.grid}>
+              <StatCard label={t.statsStudents} val={students.length} icon={Users} color="#16A34A" />
+              <StatCard label={t.statsFinances} val={payments.reduce((a,b)=>a+(b.amount||0),0).toLocaleString()} icon={DollarSign} color="#3B82F6" suffix=" FCFA" />
+            </div>
+
+            <div style={{ ...S.grid, gridTemplateColumns: '1fr 1fr' }}>
+               <div style={{ ...S.card, background: '#25D366', color: '#fff' }}>
+                  <h3 style={{ fontWeight: '800', marginBottom: 12 }}>📢 Message Groupé</h3>
+                  <p style={{ fontSize: 13, marginBottom: 20 }}>Envoyez un message à tous les parents via WhatsApp.</p>
+                  <button onClick={() => setShowBroadcast(true)} style={{ ...S.button, background: '#fff', color: '#25D366', width: '100%', fontWeight: '900' }}>COMMENCER</button>
+               </div>
+               <div style={{ ...S.card, background: '#FEF2F2', border: '1px solid #FECACA' }}>
+                  <h3 style={{ fontWeight: '800', color: '#991B1B', marginBottom: 12 }}>⚠️ Insolvables</h3>
+                  <p style={{ fontSize: 13, color: '#991B1B' }}>{t.noPaymentMessage(students.filter(s => (s.fees_paid || 0) === 0).length)}</p>
+                  <button onClick={() => {}} style={{ ...S.button, background: '#991B1B', color: '#fff', width: '100%', marginTop: 20 }}>RAPPELER TOUS</button>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {tab === 'settings' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+             <div style={S.card}>
+                <h3 style={{ fontWeight: '800', marginBottom: 20 }}>📱 Configuration WhatsApp</h3>
+                <label style={{ fontSize: 11, fontWeight: '800', color: '#25D366' }}>NUMÉRO WHATSAPP ÉCOLE</label>
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                   <input 
+                     style={{ ...S.input, borderColor: '#25D366' }} 
+                     value={schoolData?.whatsapp_number || ''} 
+                     onChange={e => setSchoolData({...schoolData, whatsapp_number: e.target.value})} 
+                   />
+                   <button onClick={() => { const clean = formatWhatsAppNumber(schoolData.whatsapp_number); if(clean) window.open(`https://wa.me/${clean}`); }} style={{ ...S.button, background: '#F1F5F9' }}>TEST</button>
+                </div>
+                <button onClick={updateSettings} style={{ ...S.button, ...S.primaryBtn, marginTop: 20, width: '100%' }}>SAUVEGARDER</button>
+             </div>
+          </div>
+        )}
+      </main>
+
+      {showBroadcast && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000 }}>
+          <div style={{ ...S.card, width: '100%', maxWidth: 500 }}>
+             <h3 style={{ fontWeight: '800', marginBottom: 16 }}>📢 Nouveau Message Groupé</h3>
+             <textarea 
+               style={{ ...S.input, height: 150 }} 
+               placeholder="Tapez le message..."
+               value={broadcastMessage}
+               onChange={e => setBroadcastMessage(e.target.value)}
+             />
+             <div style={{ marginTop: 20, display: 'flex', gap: 12 }}>
+                <button onClick={sendBroadcast} style={{ ...S.button, ...S.primaryBtn, flex: 1 }}>ENVOYER À TOUS</button>
+                <button onClick={() => setShowBroadcast(false)} style={{ ...S.button, background: '#F1F5F9', flex: 1 }}>ANNULER</button>
+             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FLOAT SUPPORT */}
+      {schoolData?.whatsapp_number ? (
+        <a href={`https://wa.me/${formatWhatsAppNumber(schoolData.whatsapp_number)}`} style={{ position: 'fixed', bottom: 30, right: 30, background: '#25D366', color: '#fff', width: 60, height: 60, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+          <Phone size={28} />
+        </a>
+      ) : null}
+    </div>
+  );
+}
